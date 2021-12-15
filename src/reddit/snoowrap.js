@@ -1,7 +1,7 @@
 'use strict';
 
-const env_vars = require('./config/env.js');
 const snoowrap = require('snoowrap');
+const env_vars = require('../../config/env.js');
 
 function get_snoowrap() {
 
@@ -21,4 +21,4 @@ function get_snoowrap() {
     return r;
 }
 
-modules.exports = get_snoowrap;
+module.exports = get_snoowrap;
