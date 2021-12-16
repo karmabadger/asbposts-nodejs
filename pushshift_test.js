@@ -1,6 +1,6 @@
 const fetch = require('node-fetch-commonjs');
 
-const sleep = require('../utils/sleep/sleep.js');
+const sleep = require('./src/utils/sleep/sleep.js');
 
 async function pushshift_post_search_after(after, start_time){
     let pushshift_url = `https://api.pushshift.io/reddit/submission/search/?after=${after}&subreddit=Altstreetbets&size=100&fields=id,author,num_comments,full_link,score,title,created_utc&sort=asc&sort_type=created_utc`;
@@ -51,4 +51,44 @@ async function pushshift_post_search_after(after, start_time){
     return null;
 }
 
-module.exports = pushshift_post_search_after;
+
+async function run(){
+
+    let cur_start_after = 1607835600;
+   
+    let res;
+    let start_time = Date.now();
+    for (let i = 0; i < 50000000; i++) {
+        try {
+            res = await pushshift_post_search_after(cur_start_after, start_time);
+            start_time = Date.now();
+
+            console.log(i);
+            if (res) {
+                console.log("Got res");
+            } else {    
+                console.log("No res");
+            }
+        } catch (error) {
+            console.log(error);
+
+            let pushshift_url = `https://api.pushshift.io/reddit/submission/search/?after=${after}&subreddit=Altstreetbets&size=100&fields=id,author,num_comments,full_link,score,title,created_utc&sort=asc&sort_type=created_utc`;
+
+            
+            // let response = await fetch(pushshift_url);
+            // console.log(response);
+
+            // fetch(pushshift_url).then(function(response) {
+            //     console.log(response);
+            // }).catch(function(error) {
+            //     console.log(error);
+            // });
+
+            
+
+        }
+    }
+}
+
+
+run();

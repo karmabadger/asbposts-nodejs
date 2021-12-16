@@ -1,6 +1,5 @@
 // const fs = require('fs');
 
-
 const mongo_config = require("./config/mongodb.js");
 const { mongo_connect, mongo_url } = mongo_config;
 
@@ -13,6 +12,7 @@ const pushshift_post_search_after = require('./src/reddit/pushshift.js');
 
 const r = get_snoowrap();
 
+const sleep = require('./src/utils/sleep/sleep.js');
 
 
 // async function log_res(res) {
@@ -72,6 +72,8 @@ async function run() {
     let num_posts = 0;
     let total_num_posts = 0;
 
+    let last_pushshift_time = Date.now();
+
     while (cur_start_after < start_time) {
 
         let p_post = null;
@@ -82,12 +84,15 @@ async function run() {
             console.log("Batch", num_batches, "Getting submissions after", cur_start_after);
 
             try {
-                p_posts = await pushshift_post_search_after(cur_start_after);
+                p_posts = await pushshift_post_search_after(cur_start_after, last_pushshift_time);
+                last_pushshift_time = Date.now();
+
                 console.log("Batch", num_batches, "Got", p_posts.data.length, "posts");
                 break;
             } catch (err) {
                 console.log(err);
                 p_posts = null;
+                last_pushshift_time = Date.now();
             }
         }
 
@@ -182,8 +187,12 @@ async function run() {
                                 }
                             }
 
-
-                            let res = await r_post.expandReplies();
+                            let res;
+                            try{
+                                res = await r_post.expandReplies();
+                            } catch(err){
+                                console.log("Error expanding replies", r_post.id, err);
+                            }
 
 
                             if (r_post.num_comments > 0) {
