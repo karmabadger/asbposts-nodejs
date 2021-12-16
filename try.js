@@ -1,3 +1,6 @@
+const env_vars = require('./config/env.js');
+
+
 const mongo_config = require("./config/mongodb.js");
 const { mongo_connect, mongo_url } = mongo_config;
 
@@ -40,6 +43,13 @@ async function run(){
 
     let results = await r.getContentByIds([r.getSubmission('khf8n4'), r.getSubmission('re0g86'), r.getSubmission('rgx27v')]);
     console.log(res);
+
+
+    console.log(env_vars);
+
+
+
+    
 
 }
 
