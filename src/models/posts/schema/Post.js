@@ -13,8 +13,13 @@ const postSchema = new Schema({
     type: String,
     required: true,
   },
+  parent_id: {
+    type: String,
+    required: false,
+},
   link: String,
   upvotes: Number,
+  downvotes: Number,
   created_utc: Number,
   created_utc_date: Date,
   submission_type: {
