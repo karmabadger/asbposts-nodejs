@@ -118,6 +118,9 @@ async function run() {
                     break;
                 } catch (err) {
                     console.log("Error", err);
+
+                    console.log("trying again after 310 seconds");
+                    await sleep(310 * 1000);
                 }
             }
 
@@ -188,71 +191,88 @@ async function run() {
                             }
 
                             let res;
-                            try{
+                            try {
                                 res = await r_post.expandReplies();
-                            } catch(err){
+                            } catch (err) {
                                 console.log("Error expanding replies", r_post.id, err);
+
+                                console.log("trying again after 310 seconds");
+                                await sleep(310 * 1000);
                             }
 
 
                             if (r_post.num_comments > 0) {
-                                let comments = res.comments;
-                                for (let j = 0; j < comments.length; j++) {
-                                    const comment = comments[j];
 
-                                    if (comment.author == null || comment.author.name == null || comment.author.name == "") {
-                                        console.log("Comment Author is null for", comment.id);
-                                        continue;
-                                    }
+                                if (res && res.length > 0) {
+                                    let comments = res.comments;
 
-                                    if (comment.author.name == "[deleted]") {
-                                        console.log("Author is [deleted] for", comment.id);
-                                        continue;
-                                    }
+                                    // console.log("Comments", comments);
+                                    for (let j = 0; j < comments.length; j++) {
+                                        const comment = comments[j];
 
-                                    if (comment.body == null || comment.body == "" || comment.body == "[deleted]") {
-                                        console.log("Selftext is null or deleted for", comment.id);
-                                        continue;
-                                    }
+                                        if (comment.author == null || comment.author.name == null || comment.author.name == "") {
+                                            console.log("Comment Author is null for", comment.id);
+                                            continue;
+                                        }
 
-                                    if (comment.author.name == "AutoModerator") {
-                                        console.log("Comment Author is AutoModerator for", comment.id);
-                                        continue;
-                                    }
+                                        if (comment.author.name == "[deleted]") {
+                                            console.log("Author is [deleted] for", comment.id);
+                                            continue;
+                                        }
 
-                                    if (naughty_list.includes(comment.author.name)) {
-                                        console.log("Comment Author is naughty for", comment.id);
-                                        continue;
-                                    }
+                                        if (comment.body == null || comment.body == "" || comment.body == "[deleted]") {
+                                            console.log("Selftext is null or deleted for", comment.id);
+                                            continue;
+                                        }
 
-                                    let c_data = {
-                                        "post_id": comment.id,
-                                        "author": comment.author.name,
-                                        "parent_id": comment.parent_id,
-                                        "link": "https://www.reddit.com" + comment.permalink,
-                                        "upvotes": comment.ups,
-                                        "downvotes": comment.downs,
-                                        "created_utc": comment.created_utc,
-                                        "created_utc_date": new Date(comment.created_utc * 1000),
-                                        "submission_type": "comment"
-                                    }
+                                        if (comment.author.name == "AutoModerator") {
+                                            console.log("Comment Author is AutoModerator for", comment.id);
+                                            continue;
+                                        }
 
-                                    for (let j = 0; j < 5; j++) {
-                                        try {
-                                            console.log(j, "Trying to find_one_by_post_id_and_update_or_create", c_data.post_id);
-                                            let c_post_mongo = await find_one_by_post_id_and_update_or_create(c_data);
-                                            console.log("Saved comment", c_post_mongo.post_id);
-                                            // console.log("Saved comment", c_data);
+                                        if (naughty_list.includes(comment.author.name)) {
+                                            console.log("Comment Author is naughty for", comment.id);
+                                            continue;
+                                        }
 
-                                            // log_res(c_post_mongo.post_id + "\n");
-                                            
-                                            num_posts++;
-                                            total_num_posts++;
-                                            break;
-                                        } catch (err) {
-                                            console.log("Error", c_data.post_id, err);
+                                        if (comment.removed == true) {
+                                            console.log("Comment is removed for", comment.id);
+                                            continue;
+                                        }
+
+                                        let c_data = {
+                                            "post_id": comment.id,
+                                            "author": comment.author.name,
+                                            "parent_id": comment.parent_id,
+                                            "link": "https://www.reddit.com" + comment.permalink,
+                                            "upvotes": comment.ups,
+                                            "downvotes": comment.downs,
+                                            "created_utc": comment.created_utc,
+                                            "created_utc_date": new Date(comment.created_utc * 1000),
+                                            "submission_type": "comment"
+                                        }
+
+                                        for (let j = 0; j < 5; j++) {
+                                            try {
+                                                console.log(j, "Trying to find_one_by_post_id_and_update_or_create", c_data.post_id);
+                                                let c_post_mongo = await find_one_by_post_id_and_update_or_create(c_data);
+                                                console.log("Saved comment", c_post_mongo.post_id);
+                                                // console.log("Saved comment", c_data);
+
+                                                // log_res(c_post_mongo.post_id + "\n");
+
+                                                num_posts++;
+                                                total_num_posts++;
+                                                break;
+                                            } catch (err) {
+                                                console.log("Error", c_data.post_id, err);
+                                            }
                                         }
                                     }
+                                }
+                                else {
+                                    console.log("No comments for", r_post.id);
+                                    continue;
                                 }
                             } else {
                                 console.log("No comments for", r_post.id);
