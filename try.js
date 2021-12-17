@@ -39,7 +39,8 @@ async function run(){
 
     let res5_1 = await res5.expandReplies();
 
-    // let res5 = await getSubmission(r, "gges0d5");
+    let res6 = await getSubmission(r, "o9g5c3");
+    let res6_1 = await res6.expandReplies();
 
     let results = await r.getContentByIds([r.getSubmission('khf8n4'), r.getSubmission('re0g86'), r.getSubmission('rgx27v')]);
     console.log(res);

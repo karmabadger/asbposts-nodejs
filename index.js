@@ -235,6 +235,11 @@ async function run() {
                                             continue;
                                         }
 
+                                        if (comment.removed == true) {
+                                            console.log("Comment is removed for", comment.id);
+                                            continue;
+                                        }
+
                                         let c_data = {
                                             "post_id": comment.id,
                                             "author": comment.author.name,
