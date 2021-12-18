@@ -239,9 +239,6 @@ async function run() {
                                 break;
                         }
 
-                        // if (r_post.removed == false) {
-
-                        // console.log(r_post)
                         let r_data = {
                             "post_id": r_post.id,
                             "author": r_post.author.name,
@@ -369,7 +366,6 @@ async function run() {
                             console.log("No comments for", r_post.id);
                             continue;
                         }
-
                     } else {
                         console.log("Couldn't get submission", p_post.id);
                         continue;
