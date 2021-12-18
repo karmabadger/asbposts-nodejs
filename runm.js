@@ -363,11 +363,11 @@ async function run() {
                                 console.log("Finished processing comments for", r_post.id, "total", counter);
                             } else {
                                 console.log("No comments for", r_post.id);
-                                return;
+                                continue;
                             }
                         } else {
                             console.log("No comments for", r_post.id);
-                            return;
+                            continue;
                         }
 
                     } else {
