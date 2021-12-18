@@ -16,6 +16,7 @@ function get_snoowrap() {
 
     r.config({
         continueAfterRatelimitError: true,
+        requestDelay: 1001,
     });
 
     return r;

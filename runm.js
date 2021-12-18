@@ -16,7 +16,7 @@ const sleep = require('./src/utils/sleep/sleep.js');
 
 
 // async function log_res(res) {
-//     fs.writeFileSync('log.txt', res, {
+//     fs.writeFileSync('logs/log.txt', res, {
 //         flag: 'a+',
 //         encoding: 'utf8',
 //     });
@@ -51,6 +51,81 @@ async function getSubmissions(reddit, submission_ids) {
     let r_posts = await reddit.getSubmissions(submission_ids);
     return r_posts;
 }
+
+
+
+
+function check_if_post_is_valid(post_obj, naughty_list) {
+
+    if (post_obj == null) {
+        return -1;
+    }
+
+    if (post_obj.author == null || post_obj.author.name == null || post_obj.author.name == "") {
+        return 1;
+    }
+
+    if (post_obj.author.name == "[deleted]") {
+        return 2;
+    }
+
+    if (post_obj.selftext == null || post_obj.selftext == "" || post_obj.selftext == "[deleted]") {
+        return 3;
+    }
+
+    if (post_obj.author.name == "AutoModerator") {
+        return 4;
+    }
+
+    if (naughty_list.includes(post_obj.author.name)) {
+        return 5;
+    }
+
+    if (post_obj.removed_by_category != null) {
+        return 6;
+    }
+
+    if (post_obj.removed) {
+        return 7;
+    }
+
+    return 0;
+}
+
+
+function check_if_comment_is_valid(comment_obj, naughty_list) {
+
+    if (comment_obj == null) {
+        return -1;
+    }
+
+    if (comment_obj.author == null || comment_obj.author.name == null || comment_obj.author.name == "") {
+        return 1;
+    }
+
+    if (comment_obj.author.name == "[deleted]") {
+        return 2;
+    }
+
+    if (comment_obj.body == null || comment_obj.body == "" || comment_obj.body == "[deleted]") {
+        return 3;
+    }
+
+    if (comment_obj.author.name == "AutoModerator") {
+        return 4;
+    }
+
+    if (naughty_list.includes(comment_obj.author.name)) {
+        return 5;
+    }
+
+    if (comment_obj.removed == true) {
+        return 6;
+    }
+
+    return 0;
+}
+
 
 
 
@@ -131,157 +206,168 @@ async function run() {
 
                     if (r_post) {
 
-                        if (r_post.author == null || r_post.author.name == null || r_post.author.name == "") {
-                            console.log("Author is null for", r_post.id);
-                            continue;
+                        let post_valid = check_if_post_is_valid(r_post, naughty_list);
+
+                        switch (post_valid) {
+                            case 0:
+                                break;
+                            case (-1):
+                                console.log("Post is null for", post_id);
+                                continue;
+                            case 1:
+                                console.log("Author is null for", r_post.id);
+                                continue;
+                            case 2:
+                                console.log("Author is [deleted] for", r_post.id);
+                                continue;
+                            case 3:
+                                console.log("Selftext is null or deleted for", r_post.id);
+                                continue;
+                            case 4:
+                                console.log("Author is AutoModerator for", r_post.id);
+                                continue;
+                            case 5:
+                                console.log("Author is in naughty list for", r_post.id);
+                                continue;
+                            case 6:
+                                console.log("Post", r_post.id, "is removed for", r_post.removed_by_category);
+                                continue;
+                            case 7:
+                                console.log("Post is removed for", r_post.id);
+                                continue;
+                            default:
+                                break;
                         }
 
-                        if (r_post.author.name == "[deleted]") {
-                            console.log("Author is [deleted] for", r_post.id);
-                            continue;
+                        // if (r_post.removed == false) {
+
+                        // console.log(r_post)
+                        let r_data = {
+                            "post_id": r_post.id,
+                            "author": r_post.author.name,
+                            "link": r_post.url,
+                            "upvotes": r_post.ups,
+                            "downvotes": r_post.downs,
+                            "created_utc": r_post.created_utc,
+                            "created_utc_date": new Date(r_post.created_utc * 1000),
+                            "submission_type": "submission"
                         }
 
-                        if (r_post.selftext == null || r_post.selftext == "" || r_post.selftext == "[deleted]") {
-                            console.log("Selftext is null or deleted for", r_post.id);
-                            continue;
-                        }
-
-                        if (r_post.author.name == "AutoModerator") {
-                            console.log("Author is AutoModerator for", r_post.id);
-                            continue;
-                        }
-
-                        if (naughty_list.includes(r_post.author.name)) {
-                            console.log("Author is naughty for", r_post.id);
-                            continue;
-                        }
-
-
-
-                        if (r_post.removed == false) {
-
-                            // console.log(r_post)
-                            let r_data = {
-                                "post_id": r_post.id,
-                                "author": r_post.author.name,
-                                "link": r_post.url,
-                                "upvotes": r_post.ups,
-                                "downvotes": r_post.downs,
-                                "created_utc": r_post.created_utc,
-                                "created_utc_date": new Date(r_post.created_utc * 1000),
-                                "submission_type": "submission"
-                            }
-
-                            // add to mongo db
-                            for (let j = 0; j < 5; j++) {
-                                try {
-                                    console.log(j, "Trying to find_one_by_post_id_and_update_or_create", r_data.post_id);
-                                    let r_post_mongo = await find_one_by_post_id_and_update_or_create(r_data);
-                                    console.log("Saved post", r_post_mongo.post_id);
-
-                                    // log_res(r_post_mongo.post_id + "\n");
-                                    // console.log("Saved post", r_data);
-
-                                    num_posts++;
-                                    total_num_posts++;
-                                    break;
-                                } catch (err) {
-                                    console.log("Error", r_post.id, err);
-                                }
-                            }
-
-                            let res;
+                        // add to mongo db
+                        for (let j = 0; j < 5; j++) {
                             try {
-                                res = await r_post.expandReplies();
+                                console.log(j, "Trying to find_one_by_post_id_and_update_or_create", r_data.post_id);
+                                let r_post_mongo = await find_one_by_post_id_and_update_or_create(r_data);
+                                console.log("Saved post", r_post_mongo.post_id);
+
+                                // log_res(r_post_mongo.post_id + "\n");
+                                // console.log("Saved post", r_data);
+
+                                num_posts++;
+                                total_num_posts++;
+                                break;
                             } catch (err) {
-                                console.log("Error expanding replies", r_post.id, err);
-
-                                console.log("trying again after 310 seconds");
-                                await sleep(310 * 1000);
+                                console.log("Error", r_post.id, err);
                             }
+                        }
+
+                        let res;
+                        try {
+                            res = await r_post.expandReplies();
+                        } catch (err) {
+                            console.log("Error expanding replies", r_post.id, err);
+
+                            console.log("trying again after 310 seconds");
+                            await sleep(310 * 1000);
+                        }
 
 
-                            if (r_post.num_comments > 0) {
+                        if (r_post.num_comments > 0) {
 
-                                if (res && res.length > 0) {
-                                    let comments = res.comments;
+                            if (res && res.comments.length > 0) {
 
-                                    // console.log("Comments", comments);
-                                    for (let j = 0; j < comments.length; j++) {
-                                        const comment = comments[j];
+                                // stack based DFS
+                                let stack = res.comments;
 
-                                        if (comment.author == null || comment.author.name == null || comment.author.name == "") {
-                                            console.log("Comment Author is null for", comment.id);
-                                            continue;
-                                        }
+                                console.log("num_comments", r_post.num_comments);
+                                console.log("stack length", stack.length);
 
-                                        if (comment.author.name == "[deleted]") {
-                                            console.log("Author is [deleted] for", comment.id);
-                                            continue;
-                                        }
+                                let counter = 0;
+                                while (stack.length > 0) {
 
-                                        if (comment.body == null || comment.body == "" || comment.body == "[deleted]") {
-                                            console.log("Selftext is null or deleted for", comment.id);
-                                            continue;
-                                        }
+                                    let comment = stack.pop();
+                                    counter++;
 
-                                        if (comment.author.name == "AutoModerator") {
-                                            console.log("Comment Author is AutoModerator for", comment.id);
-                                            continue;
-                                        }
+                                    let comment_valid = check_if_comment_is_valid(comment, naughty_list);
 
-                                        if (naughty_list.includes(comment.author.name)) {
-                                            console.log("Comment Author is naughty for", comment.id);
-                                            continue;
-                                        }
+                                    switch (comment_valid) {
+                                        case 0:
+                                            {
+                                                let c_data = {
+                                                    "post_id": comment.id,
+                                                    "author": comment.author.name,
+                                                    "parent_id": comment.parent_id,
+                                                    "link": "https://www.reddit.com" + comment.permalink,
+                                                    "upvotes": comment.ups,
+                                                    "downvotes": comment.downs,
+                                                    "created_utc": comment.created_utc,
+                                                    "created_utc_date": new Date(comment.created_utc * 1000),
+                                                    "submission_type": "comment"
+                                                }
 
-                                        if (comment.removed == true) {
-                                            console.log("Comment is removed for", comment.id);
-                                            continue;
-                                        }
+                                                for (let j = 0; j < 5; j++) {
+                                                    try {
+                                                        console.log(j, "Trying to find_one_by_post_id_and_update_or_create", c_data.post_id);
+                                                        let c_post_mongo = await find_one_by_post_id_and_update_or_create(c_data);
+                                                        console.log("Saved comment", c_post_mongo.post_id);
+                                                        // log_res(c_post_mongo.post_id + "\n");
 
-                                        let c_data = {
-                                            "post_id": comment.id,
-                                            "author": comment.author.name,
-                                            "parent_id": comment.parent_id,
-                                            "link": "https://www.reddit.com" + comment.permalink,
-                                            "upvotes": comment.ups,
-                                            "downvotes": comment.downs,
-                                            "created_utc": comment.created_utc,
-                                            "created_utc_date": new Date(comment.created_utc * 1000),
-                                            "submission_type": "comment"
-                                        }
-
-                                        for (let j = 0; j < 5; j++) {
-                                            try {
-                                                console.log(j, "Trying to find_one_by_post_id_and_update_or_create", c_data.post_id);
-                                                let c_post_mongo = await find_one_by_post_id_and_update_or_create(c_data);
-                                                console.log("Saved comment", c_post_mongo.post_id);
-                                                // console.log("Saved comment", c_data);
-
-                                                // log_res(c_post_mongo.post_id + "\n");
-
-                                                num_posts++;
-                                                total_num_posts++;
-                                                break;
-                                            } catch (err) {
-                                                console.log("Error", c_data.post_id, err);
+                                                        num_posts++;
+                                                        total_num_posts++;
+                                                        break;
+                                                    } catch (err) {
+                                                        console.log("Error", c_data.post_id, err);
+                                                    }
+                                                }
                                             }
-                                        }
+                                            break;
+                                        case -1:
+                                            console.log("Comment is null for", comment.id);
+                                            break;
+                                        case 1:
+                                            console.log("Comment Author is null for", comment.id);
+                                            break;
+                                        case 2:
+                                            console.log("Author is [deleted] for", comment.id);
+                                            break;
+                                        case 3:
+                                            console.log("Selftext is null or deleted for", comment.id);
+                                            break;
+                                        case 4:
+                                            console.log("Author is AutoModerator for", comment.id);
+                                            break;
+                                        case 5:
+                                            console.log("Author is in naughty list for", comment.id);
+                                            break;
+                                        case 7:
+                                            console.log("Comment", comment.id, "is removed");
+                                            break;
+                                        default:
+                                            break;
+                                    }
+
+                                    if (comment.replies && comment.replies.length > 0) {
+                                        stack = stack.concat(comment.replies);
                                     }
                                 }
-                                else {
-                                    console.log("No comments for", r_post.id);
-                                    continue;
-                                }
+                                console.log("Finished processing comments for", r_post.id, "total", counter);
                             } else {
                                 console.log("No comments for", r_post.id);
-                                continue;
+                                return;
                             }
-
                         } else {
-                            console.log("Post", r_post.id, "is removed for", r_post.removed_by_category);
-                            continue;
+                            console.log("No comments for", r_post.id);
+                            return;
                         }
 
                     } else {

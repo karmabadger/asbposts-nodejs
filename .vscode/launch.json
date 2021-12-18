@@ -20,7 +20,7 @@
             "skipFiles": [
                 "<node_internals>/**"
             ],
-            "program": "${workspaceFolder}\\pushshift_test.js"
+            "program": "${workspaceFolder}\\run.js"
         }
     ]
 }
