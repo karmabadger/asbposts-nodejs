@@ -69,7 +69,7 @@ function check_if_post_is_valid(post_obj, naughty_list) {
         return 2;
     }
 
-    if (post_obj.selftext == null || post_obj.selftext == "" || post_obj.selftext == "[deleted]") {
+    if (post_obj.selftext == null || post_obj.selftext == "[deleted]") {
         return 3;
     }
 
@@ -107,7 +107,7 @@ function check_if_comment_is_valid(comment_obj, naughty_list) {
         return 2;
     }
 
-    if (comment_obj.body == null || comment_obj.body == "" || comment_obj.body == "[deleted]") {
+    if (comment_obj.body == null || comment_obj.body == "[deleted]") {
         return 3;
     }
 
